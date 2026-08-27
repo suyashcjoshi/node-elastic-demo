@@ -4,7 +4,7 @@ End-to-end runbook: plain Express + Postgres app → full traces, metrics, and l
 in Elastic Serverless — **with zero code changes**, using the
 [Elastic Distribution of OpenTelemetry Node.js](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node) (EDOT).
 
-![App Architecture Digram](Node-OTEL-Demo-Video.png)
+![App Architecture Digram](Node-OTEL-Demo-Architecture.png)
 
 ## 0. Prerequisites
 
