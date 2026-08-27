@@ -1,0 +1,22 @@
+{
+  "name": "edot-express-demo",
+  "version": "1.0.0",
+  "description": "Demo: observe a Node.js backend with Elastic using EDOT (OpenTelemetry)",
+  "main": "app.js",
+  "scripts": {
+    "start": "node --env-file=.env --import @elastic/opentelemetry-node app.js",
+    "start:plain": "node app.js",
+    "start:ci": "node --import @elastic/opentelemetry-node app.js",
+    "load": "bash load.sh",
+    "load:slow": "bash load.sh slow"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@elastic/opentelemetry-node": "^1.17.0",
+    "express": "^4.22.2",
+    "pg": "^8.23.0",
+    "pino": "^10.3.1"
+  }
+}
