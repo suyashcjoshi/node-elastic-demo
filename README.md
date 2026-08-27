@@ -83,6 +83,6 @@ npm run load
 
 ## Additional resources
 
-- EDOT Node.js setup docs — https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node/setup
-- Quickstart: monitor application performance — https://www.elastic.co/docs/solutions/observability/get-started/quickstart-monitor-your-application-performance
-- Full microservices playground (Astronomy Shop, Elastic fork) — https://github.com/elastic/opentelemetry-demo
+- EDOT Node.js setup docs: https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node/setup
+- Quickstart: monitor application performance: https://www.elastic.co/docs/solutions/observability/get-started/quickstart-monitor-your-application-performance
+- Full microservices playground (Astronomy Shop, Elastic fork): https://github.com/elastic/opentelemetry-demo
