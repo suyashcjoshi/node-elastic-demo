@@ -1,4 +1,4 @@
-# Skyward — see why a Node.js app is slow, with zero instrumentation code
+# Skyward: Learn why Node.js app is slow and how to make it fast with OpenTelemetry & Elastic
 
 [![Open in GitHub Codespaces](https://img.shields.io/badge/Open_in-GitHub_Codespaces-181717?style=for-the-badge&logo=github&logoColor=white)](https://codespaces.new/suyashcjoshi/node-elastic-demo?quickstart=1)
 [![Observed with Elastic EDOT](https://img.shields.io/badge/Observed_with-Elastic_EDOT-00BFB3?style=for-the-badge&logo=elastic&logoColor=white)](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node)
@@ -78,14 +78,20 @@ Change one `CHAOS_*` flag in `.env`, run `npm run restart:elastic`, search again
 ## How it works
 
 ```
-  Browser ──HTTP──▶ skyward-search (Express · pino · pg · EDOT) ──OTLP──▶ Elastic
+  Browser ── HTTP ──▶ skyward-search (Express · pino · PostgreSQL · EDOT) ── OTLP Collector ──▶ Elastic
                         │                  │
                         │ HTTP             │ SQL
                         ▼                  ▼
-          four partner APIs (mock,     Postgres
+          four mock partner APIs (mock,     Postgres
           not instrumented)            search history, fare trends
           :4001 :4002 :4003 :4004
 ```
+
+#### Stack:
+- Node.js 22, Postgres 16, 
+- `@elastic/opentelemetry-node` 1.17,
+- Elastic Cloud Serverless
+
 
 `GET /api/search` reads the user's recent searches and the route's average fare from Postgres, records the search, calls the four partners, merges and de-duplicates the fares, and returns the cheapest 50.
 
@@ -234,4 +240,4 @@ Issues and pull requests are welcome. Please keep the `CHAOS_*` code paths intac
 
 Apache-2.0. See [LICENSE](LICENSE).
 
-Elastic, Elasticsearch and Kibana are trademarks of Elasticsearch B.V. This is a personal demo repository. See [Elastic's brand guidelines](https://brandfolder.com/elastic) before reusing the logo.
+Elastic, Elasticsearch and Kibana are trademarks of Elastic NV.
