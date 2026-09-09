@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: skyward
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  partners:
+    build: .
+    command: node src/partners.js
+    env_file: [.env]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/skyward
+    depends_on:
+      db:
+        condition: service_healthy
+      partners:
+        condition: service_started
+
+  app-fixed:
+    build: .
+    ports:
+      - "3001:3000"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/skyward
+      ENABLE_CHAOS: "false"
+      OTEL_SERVICE_NAME: skyward-search-fixed
+    depends_on:
+      db:
+        condition: service_healthy
+      partners:
+        condition: service_started

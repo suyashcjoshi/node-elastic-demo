@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "description": "Skyward flight aggregator — demos Elastic Observability with EDOT Node.js",
   "type": "module",
+  "engines": {
+    "node": ">=20.6"
+  },
   "scripts": {
+    "dev": "bash scripts/dev.sh",
+    "stop:all": "bash scripts/stop.sh",
+    "verify": "node --env-file=.env scripts/verify.js",
+    "test": "node --env-file=.env --test test/smoke.test.js",
     "seed": "node --env-file=.env src/seed.js",
     "start": "node --env-file=.env --import @elastic/opentelemetry-node src/app.js",
     "start:plain": "node --env-file=.env src/app.js",

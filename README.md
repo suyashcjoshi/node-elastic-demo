@@ -1,9 +1,10 @@
 # Skyward — see why a Node.js app is slow, with zero instrumentation code
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/suyashcjoshi/node-elastic-demo?quickstart=1)
-[![Observed with Elastic EDOT](https://img.shields.io/badge/Observed_with-Elastic_EDOT-00BFB3?logo=elastic&logoColor=white)](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node)
-[![Node 20.6+](https://img.shields.io/badge/node-%E2%89%A5_20.6-339933?logo=node.js&logoColor=white)](https://nodejs.org)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Open in GitHub Codespaces](https://img.shields.io/badge/Open_in-GitHub_Codespaces-181717?style=for-the-badge&logo=github&logoColor=white)](https://codespaces.new/suyashcjoshi/node-elastic-demo?quickstart=1)
+[![Observed with Elastic EDOT](https://img.shields.io/badge/Observed_with-Elastic_EDOT-00BFB3?style=for-the-badge&logo=elastic&logoColor=white)](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node)
+[![Node 20.6+](https://img.shields.io/badge/node-%E2%89%A5_20.6-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
+[![CI](https://img.shields.io/github/actions/workflow/status/suyashcjoshi/node-elastic-demo/ci.yml?style=for-the-badge&label=CI)](https://github.com/suyashcjoshi/node-elastic-demo/actions)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge)](LICENSE)
 
 Skyward is a small flight-search site that calls four partner APIs, merges the results and shows the cheapest fares. It is slow on purpose. The code contains three common Node.js mistakes, each behind a flag, so you can find them in Elastic Observability, fix them one at a time and watch the page get faster.
 
@@ -14,6 +15,8 @@ node --import @elastic/opentelemetry-node src/app.js
 ```
 
 > **This is a learning demo, not a template.** The slow code is intentional. Do not copy the `CHAOS_*` paths into a real service.
+>
+> **Using an AI coding tool?** Point it at [AGENTS.md](AGENTS.md). It has the run, verify and deploy commands and the rule about not "fixing" the intentional slow code.
 
 <!-- TODO: add screenshots: search page with timer, trace waterfall, /health with no spans, dependencies view -->
 
@@ -27,57 +30,50 @@ node --import @elastic/opentelemetry-node src/app.js
 
 Numbers are approximate and depend on your machine.
 
-## Quick start (Codespaces, nothing to install)
+## Quick start
 
-1. Click the **Open in GitHub Codespaces** badge. After about two minutes the app is running on port 3000. If a tab does not open, use the **Ports** panel and click the globe next to port 3000.
-2. Search **JFK → LHR** and watch the timer. Nothing is connected to Elastic yet.
-3. Connect to Elastic:
-   - Don't have Elastic yet? Start a free trial at [cloud.elastic.co/registration](https://cloud.elastic.co/registration) and choose **Serverless → Observability**.
-   - In your project open **Add data → Application → OpenTelemetry** and copy the endpoint and API key.
-   - In the Codespace, edit `.env`:
-     ```
-     OTEL_EXPORTER_OTLP_ENDPOINT=https://<your-project>.ingest.<region>.elastic.cloud:443
-     OTEL_EXPORTER_OTLP_HEADERS=Authorization=ApiKey <your-api-key>
-     ```
-   - Run `npm run restart:elastic`. After about a minute, `skyward-search` appears under **Observability → Services**.
-4. Change one `CHAOS_*` flag in `.env`, run `npm run restart:elastic`, search again and compare in Kibana. See [The three problems](#the-three-problems).
+The same five commands work on your laptop, in a Codespace and for an AI coding tool.
 
-Tip: save `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` as Codespaces secrets (GitHub **Settings → Codespaces → Secrets**). New Codespaces will then be pre-connected.
+**Requirements:** Node.js 20.6 or newer and Docker (for Postgres). An Elastic Cloud project is only needed for step 3.
 
-Useful in a Codespace: `npm run status` shows what is running, `cat /tmp/app.log` shows app logs, `bash .devcontainer/start.sh` resets everything.
-
-## Quick start (local)
-
-Requirements: Node.js 20.6 or newer, Docker (for Postgres), an Elastic Cloud project.
+### Step 1 — run the slow app
 
 ```bash
-git clone https://github.com/suyashcjoshi/node-elastic-demo
-cd node-elastic-demo
+git clone https://github.com/suyashcjoshi/node-elastic-demo && cd node-elastic-demo
 npm install
-cp .env.example .env            # add your Elastic endpoint and API key
-
-docker run --name skyward-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=skyward \
-  -p 5432:5432 -d postgres:16
-npm run seed
-
-npm run start:partners          # terminal 1: four mock partner APIs
-npm run start:plain             # terminal 2: the app, no Elastic yet
+cp .env.example .env
+npm run dev          # starts Postgres, seeds it, starts the partners and the app
+npm run verify       # PASS means everything is working
 ```
 
-Open http://localhost:3000, search **JFK → LHR** and watch the timer. Then stop the app and start it with Elastic:
+Open http://localhost:3000, search **JFK → LHR** and watch the timer. Nothing is connected to Elastic yet; this is the "before".
 
-```bash
-npm start
-```
+**In a Codespace:** click the badge at the top instead of cloning. After about two minutes the app is running on port 3000. If a tab does not open, use the **Ports** panel and click the globe next to port 3000.
 
-Optional: add these lines to `/etc/hosts` so the Dependencies view shows partner names instead of `localhost:4001`:
+### Step 2 — connect to Elastic
 
-```
-127.0.0.1 skyjet.partners.test
-127.0.0.1 aeroluz.partners.test
-127.0.0.1 nimbus.partners.test
-127.0.0.1 zephyr.partners.test
-```
+1. Don't have Elastic yet? Start a free trial at [cloud.elastic.co/registration](https://cloud.elastic.co/registration) and choose **Serverless → Observability**.
+2. In your project open **Add data → Application → OpenTelemetry** and copy the endpoint and API key.
+3. Edit `.env`:
+   ```
+   OTEL_EXPORTER_OTLP_ENDPOINT=https://<your-project>.ingest.<region>.elastic.cloud:443
+   OTEL_EXPORTER_OTLP_HEADERS=Authorization=ApiKey <your-api-key>
+   ```
+4. Run `npm run restart:elastic`. After about a minute, `skyward-search` appears under **Observability → Services**.
+
+Tip for Codespaces: save the two values as Codespaces secrets (GitHub **Settings → Codespaces → Secrets**). New Codespaces will then be pre-connected and step 2 is just the restart command.
+
+### Step 3 — fix one problem at a time
+
+Change one `CHAOS_*` flag in `.env`, run `npm run restart:elastic`, search again and compare in Kibana. See [The three problems](#the-three-problems) for what to look for.
+
+### Expected results
+
+- `curl localhost:3000/health` returns `{"ok":true}`.
+- The app log (`cat /tmp/app.log`) contains a JSON line with `"msg":"listening"` and `"port":3000`.
+- A JFK → LHR search takes several seconds with all flags on and about a second with all flags off.
+- `npm run verify` prints `PASS` and exits 0.
+- `npm run stop:all` stops everything; `npm run status` then shows nothing running.
 
 ## How it works
 
@@ -131,18 +127,48 @@ for (const partner of PARTNERS) {
 ## Slow and fast side by side
 
 ```bash
-npm run start:partners     # terminal 1
-npm start                  # terminal 2: all problems on, port 3000, skyward-search
-npm run start:fast         # terminal 3: all problems off, port 3001, skyward-search-fixed
-npm run load               # terminal 4: load on :3000
-npm run load:fast          # terminal 5: same load on :3001
+npm run dev                # partners + slow app on :3000 (skyward-search)
+npm run start:fast         # fixed app on :3001 (skyward-search-fixed)
+npm run load               # load on :3000
+npm run load:fast          # same load on :3001
 ```
 
 Open both ports in two browser windows and search at the same time. Both services appear in Observability → Services, so you can compare latency, errors and event-loop delay over the same time window.
 
+## Run each process separately
+
+If you want to watch each process's output (for example while recording), start them in their own terminals instead of using `npm run dev`:
+
+```bash
+docker run --name skyward-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=skyward \
+  -p 5432:5432 -d postgres:16
+npm run seed
+npm run start:partners     # terminal 1: four mock partner APIs
+npm run start:plain        # terminal 2: the app without Elastic
+npm start                  # ...or the app with Elastic
+```
+
+**Optional, requires sudo, skip in automation:** add these lines to `/etc/hosts` so the Dependencies view shows partner names instead of `localhost:4001`. Everything works without this step.
+
+```
+127.0.0.1 skyjet.partners.test
+127.0.0.1 aeroluz.partners.test
+127.0.0.1 nimbus.partners.test
+127.0.0.1 zephyr.partners.test
+```
+
+## Deploy with Docker
+
+```bash
+docker compose up -d       # db, partners, app (:3000) and app-fixed (:3001)
+docker compose down
+```
+
+All configuration comes from `.env`, so set the Elastic values there first if you want telemetry from the containers.
+
 ## Configuration
 
-All settings live in `.env`. Copy `.env.example` to start.
+All settings live in `.env`. Copy `.env.example` to start; it lists every variable with a comment.
 
 **Flags**
 
@@ -164,14 +190,15 @@ All settings live in `.env`. Copy `.env.example` to start.
 
 | Script | What it does |
 |---|---|
-| `npm run seed` | Create tables and seed Postgres |
-| `npm run start:partners` | Start the four mock partner APIs on ports 4001–4004 |
-| `npm run start:plain` | Start the app on :3000 without Elastic |
-| `npm start` | Start the app on :3000 with Elastic (EDOT) |
+| `npm run dev` | Start Postgres (Docker), seed, start partners and the app without Elastic |
+| `npm run verify` | Check `/health` and `/api/search`; prints PASS or FAIL |
+| `npm run status` | Show whether the app and partners are running |
+| `npm run stop:all` | Stop everything started by `dev` |
+| `npm run restart:elastic` | Restart the app with Elastic (EDOT) |
 | `npm run start:fast` | Start the fixed app on :3001 as `skyward-search-fixed` |
-| `npm run restart:elastic` | Stop the app and start it with Elastic |
 | `npm run load` / `npm run load:fast` | Load test :3000 / :3001 |
-| `npm run status` | Show whether app and partners are running |
+| `npm test` | Smoke test used by CI |
+| `npm run seed`, `start:partners`, `start:plain`, `npm start` | Individual processes, see above |
 
 ## Troubleshooting
 
@@ -180,9 +207,10 @@ All settings live in `.env`. Copy `.env.example` to start.
 | Service appears as `unknown_service:node` | `OTEL_SERVICE_NAME` not set | Set it in `.env` and restart |
 | Traces appear but no logs | Log sending is off by default | `ELASTIC_OTEL_NODE_ENABLE_LOG_SENDING=true` |
 | Nothing appears in Kibana | Endpoint or API key typo, or app started before `.env` was edited | Check `.env`, run `npm run restart:elastic`, wait a minute |
-| 502 in Codespaces | App is not running | `npm run status`, then `bash .devcontainer/start.sh` |
+| 502 in Codespaces | App is not running | `npm run status`, then `npm run dev` |
 | `bad option: --env-file` | Node older than 20.6 | Upgrade Node |
-| `ECONNREFUSED 5432` | Postgres not running | Start the Docker container, then `npm run seed` |
+| `ECONNREFUSED 5432` | Postgres not running | `npm run dev` (starts it) or start the Docker container |
+| `npm run verify` fails right after `dev` | App still starting | Wait a few seconds and run it again |
 | Partners show as `localhost:400x` | No hostnames mapped | Optional `/etc/hosts` step above |
 
 ## Tested with
@@ -200,7 +228,7 @@ Node.js 22, Postgres 16, `@elastic/opentelemetry-node` 1.17, Elastic Cloud Serve
 
 ## Contributing
 
-Issues and pull requests are welcome. Please keep the `CHAOS_*` code paths intact; they are the point of the demo.
+Issues and pull requests are welcome. Please keep the `CHAOS_*` code paths intact; they are the point of the demo. Run `npm run verify` and `npm test` before opening a PR.
 
 ## License
 
