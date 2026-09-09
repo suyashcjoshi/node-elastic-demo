@@ -23,10 +23,10 @@ The app is completely standard Node.js web app using Express, Postgres with **ze
 
 ```
 
-``sh
+```sh
   node --import @elastic/opentelemetry-node app.js   ← the only change
   config: OTEL_EXPORTER_OTLP_ENDPOINT · OTEL_API_KEY · OTEL_SERVICE_NAME
-``
+```
 
 What Elastic captures automatically, with no code changes:
 - **Traces** — waterfall per request, spans for every HTTP call and SQL query
