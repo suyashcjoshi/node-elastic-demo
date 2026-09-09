@@ -1,0 +1,32 @@
+{
+  "name": "Skyward demo",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/node-elastic-demo",
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "4gb"
+  },
+  "forwardPorts": [3000, 3001],
+  "portsAttributes": {
+    "3000": {
+      "label": "Skyward (chaos)",
+      "onAutoForward": "openBrowser"
+    },
+    "3001": {
+      "label": "Skyward (fixed)",
+      "onAutoForward": "silent"
+    },
+    "4001": { "onAutoForward": "ignore" },
+    "4002": { "onAutoForward": "ignore" },
+    "4003": { "onAutoForward": "ignore" },
+    "4004": { "onAutoForward": "ignore" }
+  },
+  "postCreateCommand": "npm install && ([ -f .env ] || cp .env.example .env)",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "remoteEnv": {
+    "OTEL_EXPORTER_OTLP_ENDPOINT": "${localEnv:OTEL_EXPORTER_OTLP_ENDPOINT}",
+    "OTEL_EXPORTER_OTLP_HEADERS": "${localEnv:OTEL_EXPORTER_OTLP_HEADERS}",
+    "KIBANA_URL": "${localEnv:KIBANA_URL}"
+  }
+}

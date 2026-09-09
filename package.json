@@ -6,9 +6,13 @@
   "scripts": {
     "seed": "node --env-file=.env src/seed.js",
     "start": "node --env-file=.env --import @elastic/opentelemetry-node src/app.js",
-    "start:partners": "node src/partners.js",
+    "start:plain": "node --env-file=.env src/app.js",
+    "start:partners": "node --env-file=.env src/partners.js",
     "start:fast": "ENABLE_CHAOS=false PORT=3001 OTEL_SERVICE_NAME=skyward-search-fixed node --env-file=.env --import @elastic/opentelemetry-node src/app.js",
-    "load": "node load/search.js"
+    "stop": "pkill -f src/app.js || true",
+    "restart:elastic": "npm run stop && npm start",
+    "load": "node load/search.js",
+    "load:fast": "LOAD_URL=http://localhost:3001 node load/search.js"
   },
   "dependencies": {
     "@elastic/opentelemetry-node": "^1.17.0",
