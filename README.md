@@ -1,9 +1,9 @@
 # Skyward — see why a Node.js app is slow, with zero instrumentation code
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/suyashcjoshi/node-elastic-demo?quickstart=1)
-[![Observed with Elastic EDOT](https://img.shields.io/badge/Observed_with-Elastic_EDOT-00BFB3?logo=elastic&logoColor=white)](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node)
-[![Node 20.6+](https://img.shields.io/badge/node-%E2%89%A5_20.6-339933?logo=node.js&logoColor=white)](https://nodejs.org)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Open in GitHub Codespaces](https://img.shields.io/badge/Open_in-GitHub_Codespaces-181717?style=for-the-badge&logo=github&logoColor=white)](https://codespaces.new/suyashcjoshi/node-elastic-demo?quickstart=1)
+[![Observed with Elastic EDOT](https://img.shields.io/badge/Observed_with-Elastic_EDOT-00BFB3?style=for-the-badge&logo=elastic&logoColor=white)](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node)
+[![Node 20.6+](https://img.shields.io/badge/node-%E2%89%A5_20.6-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge)](LICENSE)
 
 Skyward is a small flight-search site that calls four partner APIs, merges the results and shows the cheapest fares. It is slow on purpose. The code contains three common Node.js mistakes, each behind a flag, so you can find them in Elastic Observability, fix them one at a time and watch the page get faster.
 
