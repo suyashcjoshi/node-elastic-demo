@@ -8,6 +8,35 @@ Skyward is a deliberately crippled online-travel-agency flight aggregator wired 
 
 ---
 
+## Architecture
+
+```
+              ╔═══════════════════════════════════════════╗
+              ║   + EDOT Node.js  ·  0 lines of OTel code ║
+  Browser /   ║  ┌───────────────────────────────────────┐ ║  OTLP  ┌─────────────────────┐
+  curl  ──────╫─▶│         Your Node.js app              │─╫───────▶│       Elastic       │
+  HTTP        ║  │     Express · pino · pg · app.js      │ ║ traces │  Kibana · Serverless│
+              ║  └────────────────────┬──────────────────┘ ║ metrics└─────────────────────┘
+              ╚═══════════════════════╪═══════════════════╝  logs
+                                     │ SQL
+                                     ▼
+                              ┌──────────────┐
+                              │   Postgres   │
+                              │   (docker)   │
+                              └──────────────┘
+
+  node --import @elastic/opentelemetry-node app.js   ← the only change
+  config: OTEL_EXPORTER_OTLP_ENDPOINT · OTEL_API_KEY · OTEL_SERVICE_NAME
+```
+
+What Elastic captures automatically, with no code changes:
+- **Traces** — waterfall per request, spans for every HTTP call and SQL query
+- **Metrics** — Node.js event-loop delay, CPU, memory, GC
+- **Logs** — pino output correlated to traces by `trace_id`
+- **Errors** — stack traces with the exact span that threw
+
+---
+
 ## Setup
 
 ### 1. Elastic Serverless project
@@ -24,6 +53,8 @@ cd node-elastic-demo
 npm install
 cp .env.example .env        # paste your endpoint and API key here
 ```
+
+**Optional:** set `KIBANA_URL` in `.env` to your Kibana deployment URL. This enables the **Open in Kibana ↗** link inside the app's debug drawer.
 
 **Why does `OTEL_SERVICE_NAME` matter?**
 It is the primary key in every Kibana view — service inventory, APM transactions, dependency map, correlated logs. Without a meaningful name all your signals land in one undifferentiated bucket. With `skyward-search` you can open two services side-by-side in the same time window (`skyward-search` and `skyward-search-fixed`) and watch latency drop as you flip each chaos flag.
@@ -50,6 +81,8 @@ npm start
 ```
 
 Open **http://localhost:3000**, search JFK → LHR, and watch the timer. Expect 6–12 seconds with all chaos flags on.
+
+After the search completes, a dot appears on the **Debug with Elastic** button in the header. Click it to open the investigation guide alongside a direct link to your Kibana deployment.
 
 ---
 
@@ -162,6 +195,8 @@ Runs autocannon with 15 concurrent connections against `/api/search` with random
 | `ENABLE_CHAOS` | — | Forces all three off |
 
 `FARES_PER_PARTNER=3000` is calibrated to produce ~700 ms of blocking with `CHAOS_GAP=true`. Lower it for faster iteration during development.
+
+Set `KIBANA_URL=https://your-deployment.kb.region.aws.elastic.cloud` to enable the **Open in Kibana ↗** deep-link in the app's debug drawer.
 
 ---
 

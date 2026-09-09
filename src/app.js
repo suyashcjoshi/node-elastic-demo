@@ -146,6 +146,10 @@ app.get('/api/search', async (req, res, next) => {
   }
 });
 
+app.get('/api/config', (_req, res) => {
+  res.json({ kibanaUrl: process.env.KIBANA_URL || null });
+});
+
 app.use((err, req, res, _next) => {
   log.error({ err, path: req.path }, 'request failed');
   res.status(500).json({ error: 'internal server error' });

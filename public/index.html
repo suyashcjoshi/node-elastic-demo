@@ -9,10 +9,16 @@
 <body>
 
 <header>
-  <div>
-    <div class="logo">✈ Skyward</div>
-  </div>
-  <div class="logo-tag">Elastic Observability demo</div>
+  <div class="logo">✈ Skyward</div>
+  <button class="debug-btn" id="debug-btn" aria-label="Debug with Elastic">
+    <span class="debug-icon">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </span>
+    <span>Debug with Elastic</span>
+    <span class="debug-badge" id="debug-badge" hidden></span>
+  </button>
 </header>
 
 <main>
@@ -37,81 +43,6 @@
         <button type="submit" id="search-btn">Search flights</button>
       </div>
     </form>
-  </div>
-
-  <!-- Kibana investigation guide -->
-  <div class="kibana-guide" id="kibana-guide">
-    <div class="kibana-guide-header" id="guide-toggle">
-      <div class="kibana-guide-title">
-        <span>🔍</span>
-        <span>Kibana investigation guide — 3 reveals, ~5 minutes</span>
-      </div>
-      <span class="kibana-guide-chevron">▼</span>
-    </div>
-    <div class="kibana-guide-body">
-      <div style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:.25rem">
-        Run a search, then follow these steps in Kibana while traces arrive. Each step uncovers one antipattern.
-        Flip the matching flag in <code>.env</code> to fix it and watch the metrics change in real time.
-      </div>
-      <div class="guide-steps">
-
-        <div class="guide-step">
-          <div class="step-num">1</div>
-          <div class="step-body">
-            <div class="step-title">Open the trace waterfall</div>
-            <div class="step-nav">
-              Observability → Services → <code>skyward-search</code> → Transactions →
-              click <code>GET /api/search</code> → open the slowest sample trace.
-              <br>Look at the waterfall: four partner HTTP spans are lined up as a staircase — each waits for the previous to finish.
-            </div>
-            <span class="step-reveal r1">Reveal 1 · flip CHAOS_STAIRCASE=false</span>
-          </div>
-        </div>
-
-        <div class="guide-step">
-          <div class="step-num">2</div>
-          <div class="step-body">
-            <div class="step-title">Check event-loop delay + /health latency</div>
-            <div class="step-nav">
-              Observability → Services → <code>skyward-search</code> → <code>Metrics</code> tab.
-              Find <code>nodejs.eventloop.delay.p99</code> — spikes of 700 ms+ appear on every search.
-              <br>Then Observability → <strong>Logs Explorer</strong>, filter <code>url.path: /health</code> — even the health
-              endpoint shows the same delay. A blocked event loop hurts <em>all</em> requests.
-            </div>
-            <span class="step-reveal r2">Reveal 2 · flip CHAOS_GAP=false</span>
-          </div>
-        </div>
-
-        <div class="guide-step">
-          <div class="step-num">3</div>
-          <div class="step-body">
-            <div class="step-title">Find the zombie partner in Service Map</div>
-            <div class="step-nav">
-              Observability → <strong>Service Map</strong> — <code>localhost:4004</code> (Zephyr) will be
-              visibly hotter than the other three partners (higher error rate, extreme p99).
-              <br>Click it → open an error trace → switch to the <code>Logs</code> tab inside → see
-              <code>partners_responded: 3</code> in the correlated pino log line.
-            </div>
-            <span class="step-reveal r3">Reveal 3 · flip CHAOS_PARTNER=false</span>
-          </div>
-        </div>
-
-        <div class="guide-step">
-          <div class="step-num">4</div>
-          <div class="step-body">
-            <div class="step-title">Side-by-side comparison</div>
-            <div class="step-nav">
-              Run <code>npm run start:fast</code> in a new terminal (port 3001, all chaos off,
-              service name <code>skyward-search-fixed</code>).
-              Both services appear in the APM service inventory simultaneously — compare latency
-              distributions and event-loop metrics in the same time window.
-            </div>
-            <span class="step-reveal log">Bonus · search http://localhost:3001 for the fixed experience</span>
-          </div>
-        </div>
-
-      </div>
-    </div>
   </div>
 
   <!-- Loading state -->
@@ -145,6 +76,92 @@
 
 </main>
 
+<!-- Elastic debug drawer -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Elastic Observability">
+  <div class="drawer-header">
+    <div class="drawer-title">
+      <svg class="elastic-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14 14-6.268 14-14S23.732 2 16 2z" fill="#00BFB3" opacity=".15"/>
+        <path d="M20.5 10.5H13a2.5 2.5 0 000 5h6a2.5 2.5 0 010 5h-8" stroke="#00BFB3" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Elastic Observability
+    </div>
+    <div class="drawer-actions">
+      <a class="kibana-link" id="kibana-link" href="#" target="_blank" rel="noopener" hidden>
+        Open in Kibana ↗
+      </a>
+      <button class="drawer-close" id="drawer-close" aria-label="Close">✕</button>
+    </div>
+  </div>
+
+  <div class="drawer-body">
+    <div class="drawer-intro">
+      All of these insights were captured <strong>automatically</strong> — no instrumentation code added to the app.
+      Run a search, then follow the steps below in Kibana to watch the traces arrive in real time.
+    </div>
+
+    <div class="guide-steps">
+
+      <div class="guide-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Open the trace waterfall</div>
+          <div class="step-nav">
+            Observability → Services → <code>skyward-search</code> → Transactions →
+            click <code>GET /api/search</code> → open the slowest sample trace.
+            <br>Look at the waterfall: four partner HTTP spans are lined up as a staircase — each waits for the previous to finish.
+          </div>
+          <span class="step-reveal r1">Reveal 1 · flip CHAOS_STAIRCASE=false</span>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Check event-loop delay + /health latency</div>
+          <div class="step-nav">
+            Observability → Services → <code>skyward-search</code> → <code>Metrics</code> tab.
+            Find <code>nodejs.eventloop.delay.p99</code> — spikes of 700 ms+ appear on every search.
+            <br>Then Observability → <strong>Logs Explorer</strong>, filter <code>url.path: /health</code> — even the health
+            endpoint shows the same delay. A blocked event loop hurts <em>all</em> requests.
+          </div>
+          <span class="step-reveal r2">Reveal 2 · flip CHAOS_GAP=false</span>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Find the zombie partner in Service Map</div>
+          <div class="step-nav">
+            Observability → <strong>Service Map</strong> — <code>localhost:4004</code> (Zephyr) will be
+            visibly hotter than the other three partners (higher error rate, extreme p99).
+            <br>Click it → open an error trace → switch to the <code>Logs</code> tab inside → see
+            <code>partners_responded: 3</code> in the correlated pino log line.
+          </div>
+          <span class="step-reveal r3">Reveal 3 · flip CHAOS_PARTNER=false</span>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Side-by-side comparison</div>
+          <div class="step-nav">
+            Run <code>npm run start:fast</code> in a new terminal (port 3001, all chaos off,
+            service name <code>skyward-search-fixed</code>).
+            Both services appear in the APM service inventory simultaneously — compare latency
+            distributions and event-loop metrics in the same time window.
+          </div>
+          <span class="step-reveal log">Bonus · search http://localhost:3001 for the fixed experience</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</aside>
+
 <script>
 (function () {
   // Default date = 1 week out
@@ -152,10 +169,36 @@
   d.setDate(d.getDate() + 7);
   document.getElementById('date').value = d.toISOString().slice(0, 10);
 
-  // Guide toggle
-  document.getElementById('guide-toggle').addEventListener('click', () => {
-    document.getElementById('kibana-guide').classList.toggle('open');
-  });
+  // Fetch Kibana URL from server config
+  fetch('/api/config').then(r => r.json()).then(cfg => {
+    if (cfg.kibanaUrl) {
+      const link = document.getElementById('kibana-link');
+      link.href = cfg.kibanaUrl;
+      link.hidden = false;
+    }
+  }).catch(() => {});
+
+  // Drawer
+  const debugBtn = document.getElementById('debug-btn');
+  const debugBadge = document.getElementById('debug-badge');
+  const drawer = document.getElementById('drawer');
+  const overlay = document.getElementById('drawer-overlay');
+  const closeBtn = document.getElementById('drawer-close');
+
+  function openDrawer() {
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    debugBadge.hidden = true;
+  }
+  function closeDrawer() {
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+  }
+
+  debugBtn.addEventListener('click', openDrawer);
+  closeBtn.addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
   const form    = document.getElementById('search-form');
   const btn     = document.getElementById('search-btn');
@@ -182,8 +225,6 @@
       .forEach(s => { document.getElementById(s).hidden = s !== id; });
   }
 
-  function hide(id) { document.getElementById(id).hidden = true; }
-
   function esc(s) {
     return String(s)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -197,7 +238,6 @@
     return m >= 60 ? `${Math.floor(m/60)}h ${m%60}m` : `${m}m`;
   }
 
-  // Deterministic airline logo color by first letter of code
   const COLORS = { M:'al-M', S:'al-S', A:'al-A', N:'al-N', Z:'al-Z' };
   function logoClass(code) { return COLORS[code[0]] || 'al-X'; }
 
@@ -216,7 +256,6 @@
       bar.appendChild(p);
     };
 
-    const allResponded = data.partners_responded === data.partners_total;
     addPill('partners', `${data.partners_responded} / ${data.partners_total} partners responded`);
     addPill('time', `${(data.elapsed_ms / 1000).toFixed(2)}s`);
 
@@ -290,6 +329,9 @@
         show('error-section');
         document.getElementById('error-msg').textContent =
           body.error || `HTTP ${res.status} — please try again.`;
+        // pulse the debug button on error too — something to investigate
+        debugBadge.hidden = false;
+        debugBtn.classList.add('pulse');
         return;
       }
 
@@ -297,11 +339,9 @@
       show('results-section');
       renderResults(data, origin, dest);
 
-      // Auto-open guide after first successful search
-      const guide = document.getElementById('kibana-guide');
-      if (!guide.classList.contains('open')) {
-        guide.classList.add('open');
-      }
+      // Signal that traces were captured — pulse the debug button
+      debugBadge.hidden = false;
+      debugBtn.classList.add('pulse');
     } catch {
       stopTimer();
       show('error-section');
