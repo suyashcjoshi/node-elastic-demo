@@ -1,99 +1,174 @@
-# Observe a Node.js Backend with Elastic using OpenTelemetry (EDOT)
+# Skyward
 
-End-to-end runbook: plain Express + Postgres app → full traces, metrics, and logs
-in Elastic Serverless — **with zero code changes**, using the
-[Elastic Distribution of OpenTelemetry Node.js](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node) (EDOT).
+You open the search page and hit **Search flights**. The timer climbs past six seconds. Your colleagues ping you before lunch. Three complaints, same route.
 
-![App Architecture Digram](Node-OTEL-Demo-Architecture.png)
+The application has no errors. CPU is fine. The database is fast. Nothing is obviously broken — and that is exactly the problem.
 
-## 0. Prerequisites
+Skyward is a deliberately crippled online-travel-agency flight aggregator wired with [Elastic Distribution of OpenTelemetry Node.js (EDOT)](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node) so you can watch Kibana diagnose three concurrent antipatterns: a sequential partner-call staircase, an event-loop–blocking dedupe, and a slow third-party API with no timeout. The app is completely standard — Express, Postgres, pino — with **zero OTel code**. Instrumentation happens at process startup via `--import`.
 
-- **Node.js 20.6+ or 18.19+** 
-- **Docker** (only for Postgres — the app itself runs on bare Node)
-- **curl** (traffic generation)
-- An email address for the free [**Elastic Cloud trial**](https://cloud.elastic.co/registration)
+---
 
-## 1. Create an Elastic Serverless Observability project
+## Setup
 
-1. Go to **https://cloud.elastic.co** and sign up for the free trial.
-2. Create a new project → choose the **Serverless** deployment type → project type **Elastic for Observability**. 
-3. In your new project, go to **Add data → Application → OpenTelemetry**.
-4. On that page, copy the credentials and paste in the project's [.env](.env) file.
+### 1. Elastic Serverless project
 
-## 2. Run the app (uninstrumented first)
+Create a free trial at [cloud.elastic.co](https://cloud.elastic.co/registration) → **New project → Serverless → Observability**.
 
-Start Postgres (maker sure Docker desktop is running):
+Go to **Add data → APM → OpenTelemetry** and copy your endpoint + API key.
+
+### 2. Clone and install
 
 ```bash
-docker run --name storefront-db \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=storefront \
-  -p 5432:5432 -d postgres:16
-```
-
-Install and start the app **plain** (no instrumentation yet):
-
-```bash
+git clone https://github.com/suyashcjoshi/node-elastic-demo
+cd node-elastic-demo
 npm install
-npm run start:plain
+cp .env.example .env        # paste your endpoint and API key here
 ```
 
-## 3. Instrument with EDOT Node.js that requires zero code changes.
+**Why does `OTEL_SERVICE_NAME` matter?**
+It is the primary key in every Kibana view — service inventory, APM transactions, dependency map, correlated logs. Without a meaningful name all your signals land in one undifferentiated bucket. With `skyward-search` you can open two services side-by-side in the same time window (`skyward-search` and `skyward-search-fixed`) and watch latency drop as you flip each chaos flag.
+
+### 3. Start Postgres and seed data
 
 ```bash
-npm install --save @elastic/opentelemetry-node
+docker run --name skyward-db \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=skyward \
+  -p 5432:5432 -d postgres:16
+
+npm run seed
 ```
 
-### Configure the [.env](.env) file or directly paste the commands with your credentials:
+### 4. Start everything
 
 ```bash
-export OTEL_EXPORTER_OTLP_ENDPOINT="<paste the endpoint from Kibana, verbatim>"
-export OTEL_EXPORTER_OTLP_HEADERS="Authorization=ApiKey <paste your API key>"
-export OTEL_SERVICE_NAME="storefront-api"
-```
+# Terminal 1 — four mock partner APIs (SkyJet :4001, AeroLuz :4002, Nimbus :4003, Zephyr :4004)
+npm run start:partners
 
-### Start the app:
-
-```bash
+# Terminal 2 — skyward-search on :3000, sending telemetry to Elastic
 npm start
 ```
 
-### Generate simulated traffic that will include dummy errors
+Open **http://localhost:3000**, search JFK → LHR, and watch the timer. Expect 6–12 seconds with all chaos flags on.
+
+---
+
+## The investigation
+
+### Reveal 1 — the staircase
+
+**Symptom:** every search takes ≥ 4× longer than any single partner response.
+
+**Where to look in Kibana:** Observability → Services → `skyward-search` → Transactions → `GET /api/search` → open any trace. In the **waterfall**, the four outbound HTTP spans are arranged as a staircase: AeroLuz starts only after SkyJet finishes. Each partner takes ~80–100 ms, but sequenced they add up to ~400 ms before the response can even start processing.
+
+**Why it happens:** `CHAOS_STAIRCASE=true` uses:
+```js
+for (const partner of PARTNERS) {
+  await fetch(partner.url + qs)   // each waits for the previous
+}
+```
+
+**Fix:** set `CHAOS_STAIRCASE=false` in `.env` and restart. The waterfall now shows all four spans starting simultaneously. Partner time drops from ~400 ms to ~100 ms.
+
+---
+
+### Reveal 2 — the event-loop freeze
+
+**Symptom:** even after fixing the staircase, searches still take 700–900 ms. The `/health` endpoint — which does no I/O — starts responding slowly too.
+
+**Where to look in Kibana:**
+
+1. Observability → Services → `skyward-search` → **Metrics** tab. Find `nodejs.eventloop.delay.p99`. You will see spikes of 700+ ms coinciding exactly with search requests.
+
+2. Observability → **Logs Explorer**, filter `url.path: /health`. Even the health check shows the same latency spikes. A health endpoint that blocks is a textbook sign of synchronous CPU work on the JavaScript thread.
+
+**Why it happens:** `CHAOS_GAP=true` deduplicates fares with a synchronous O(n²) nested loop:
+```js
+for (let i = 0; i < allFares.length; i++) {
+  for (let j = 0; j < unique.length; j++) {
+    if (allFares[i].id === unique[j].id) { dup = true; break; }
+  }
+}
+```
+At `FARES_PER_PARTNER=3000` there are 12,000 fares across four partners. The inner loop grows to ~8,000 comparisons per outer iteration — roughly 72 million string comparisons on the JS thread — targeting ~700 ms of blocking per request.
+
+**Fix:** set `CHAOS_GAP=false`. The app switches to a Map-keyed O(n) dedupe. Event-loop delay returns to single-digit milliseconds.
+
+---
+
+### Reveal 3 — the zombie partner
+
+**Symptom:** after fixing reveals 1 and 2, most searches are fast but a tail of requests still spikes above 4 seconds with only 3 of 4 partners responding.
+
+**Where to look in Kibana:**
+
+1. Observability → **Service Map** (or Services → `skyward-search` → Dependencies). You will see `localhost:4004` with dramatically higher p99 latency and a non-trivial error rate compared to the other three partners.
+
+2. Click through to an error trace on that dependency. The Zephyr span is red. Switch to the **Logs** tab inside the trace — the correlated pino log line shows `"partners_responded": 3`.
+
+**Why it happens:** `CHAOS_PARTNER=true` makes the Zephyr mock (port 4004) add 4,000 ms of latency and return HTTP 503 15% of the time. Crucially, `app.js` sets **no outbound timeout**, so every slow Zephyr call holds the request open for the full 4 seconds.
+
+**Fix:** set `CHAOS_PARTNER=false`. Zephyr behaves like the other partners, and `app.js` wraps every fetch in `AbortSignal.timeout(2000)` — Zephyr is cut off at 2 seconds and the search returns partial results immediately.
+
+---
+
+## Run chaos and fixed side by side
+
+```bash
+# Terminal 1 — partners (serves both)
+npm run start:partners
+
+# Terminal 2 — all chaos on, :3000, service name: skyward-search
+npm start
+
+# Terminal 3 — all chaos off, :3001, service name: skyward-search-fixed
+npm run start:fast
+
+# Terminal 4 — load both ports
+npm run load
+```
+
+In Kibana's **Observability → Services** both services appear simultaneously. Compare their latency distributions, error rates, and event-loop metrics in the same time window. The difference is stark.
+
+---
+
+## Generate load
 
 ```bash
 npm run load
 ```
 
-## 5. Switch over to the newly created Observaility project in Elastic serverss and Explore in Kibana:
+Runs autocannon with 15 concurrent connections against `/api/search` with randomised origins, destinations, dates, and users for 5 minutes, plus a 1 req/s trickle to `/health`. The health latency in the results tells you exactly how badly the event loop is blocked.
 
-1. **Service inventory** — *Applications → Service Inventory*. `storefront-api`
-   appears with latency, throughput, and failure rate.
-2. **Trace waterfall** — click the service → **Transactions** → open `POST /orders`.
-   The waterfall shows the Express route, the two `pg.query` spans, and the ~100 ms
-   gap of the fake payment call. This is the money shot.
-3. **Errors** — the **Errors** tab shows the deliberate `relation "a_table_that_does_not_exist"`
-   failures from `/error`, with stack traces and occurrence charts.
-4. **Logs ↔ trace correlation** — inside any transaction, use the related **logs**
-   view (or *Discover/Logs* filtered by `service.name: storefront-api`). Open a log
-   entry: it carries `trace_id`/`span_id`. Jump from a log line to its exact trace and back.
-5. **Metrics** — the service **Metrics** tab shows CPU and memory
-   (`process.cpu.*`, `process.memory.*` from EDOT's host-metrics defaults).
-6. **Dependencies / service map** — shows `storefront-api → postgresql` as a
-   downstream dependency with its own latency stats.
+---
 
-## Route map (what each endpoint is *for*)
+## npm scripts
 
-| Route | Purpose in the demo |
+| Script | What it does |
 |---|---|
-| `GET /products`, `GET /products/:id` | Clean, fast traces; the 404 path emits a correlated `warn` log |
-| `POST /orders` | Multi-span waterfall: SELECT → fake payment delay → INSERT |
-| `GET /error` | Error traces + correlated `error` logs (Errors tab) |
-| `GET /slow` | ~2 s DB sleep — triggers the latency alert |
-| `GET /health` | Boring on purpose |
+| `npm run seed` | Create tables and seed users + fare trends in Postgres |
+| `npm run start:partners` | Start all four mock partner servers (one process, ports 4001–4004) |
+| `npm start` | Start skyward-search on :3000 with EDOT and all chaos flags on |
+| `npm run start:fast` | Start skyward-search on :3001 with all chaos off (`skyward-search-fixed`) |
+| `npm run load` | Run the autocannon load test against :3000 |
+
+## Chaos flags (`.env`)
+
+| Flag | true (default) | false |
+|---|---|---|
+| `CHAOS_STAIRCASE` | Sequential partner fetches | `Promise.allSettled` fan-out |
+| `CHAOS_GAP` | O(n²) dedupe blocks event loop | Map-keyed O(n) dedupe |
+| `CHAOS_PARTNER` | Zephyr: +4 s latency, 15% 503, no timeout | Zephyr normal, `AbortSignal.timeout(2000)` |
+| `ENABLE_CHAOS` | — | Forces all three off |
+
+`FARES_PER_PARTNER=3000` is calibrated to produce ~700 ms of blocking with `CHAOS_GAP=true`. Lower it for faster iteration during development.
+
+---
 
 ## Useful links
 
-- EDOT Node.js setup docs — https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node/setup
-- Quickstart: monitor application performance — https://www.elastic.co/docs/solutions/observability/get-started/quickstart-monitor-your-application-performance
-- Full microservices playground (Astronomy Shop, Elastic fork) — https://github.com/elastic/opentelemetry-demo
-- No cloud? Local stack in one command: `curl -fsSL https://elastic.co/start-local | sh -s -- --edot`
+- [Companion Skyward blog post](#) — full walkthrough with Kibana screenshots
+- [EDOT Node.js setup docs](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node/setup)
+- [Quickstart: monitor application performance](https://www.elastic.co/docs/solutions/observability/get-started/quickstart-monitor-your-application-performance)
+- [Full microservices playground (Astronomy Shop)](https://github.com/elastic/opentelemetry-demo)
+- No cloud? `curl -fsSL https://elastic.co/start-local | sh -s -- --edot`

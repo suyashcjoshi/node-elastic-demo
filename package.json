@@ -1,22 +1,22 @@
 {
-  "name": "edot-express-demo",
+  "name": "skyward",
   "version": "1.0.0",
-  "description": "Demo: observe a Node.js backend with Elastic using EDOT (OpenTelemetry)",
-  "main": "app.js",
+  "description": "Skyward flight aggregator — demos Elastic Observability with EDOT Node.js",
+  "type": "module",
   "scripts": {
-    "start": "node --env-file=.env --import @elastic/opentelemetry-node app.js",
-    "start:plain": "node app.js",
-    "start:ci": "node --import @elastic/opentelemetry-node app.js",
-    "load": "bash load.sh",
-    "load:slow": "bash load.sh slow"
+    "seed": "node --env-file=.env src/seed.js",
+    "start": "node --env-file=.env --import @elastic/opentelemetry-node src/app.js",
+    "start:partners": "node src/partners.js",
+    "start:fast": "ENABLE_CHAOS=false PORT=3001 OTEL_SERVICE_NAME=skyward-search-fixed node --env-file=.env --import @elastic/opentelemetry-node src/app.js",
+    "load": "node load/search.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@elastic/opentelemetry-node": "^1.17.0",
     "express": "^4.22.2",
     "pg": "^8.23.0",
     "pino": "^10.3.1"
+  },
+  "devDependencies": {
+    "autocannon": "^8.0.0"
   }
 }
