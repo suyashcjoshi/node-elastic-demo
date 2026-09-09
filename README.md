@@ -1,12 +1,8 @@
-# Skyward
+# Skyward Demo App
 
-You open the search page and hit **Search flights**. The timer climbs past six seconds. Your colleagues ping you before lunch. Three complaints, same route.
+Skyward is a deliberately slow online travel agency flight aggregator demo wired with [Elastic Distribution of OpenTelemetry Node.js (EDOT)](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node) so you can watch Kibana diagnose three concurrent anti-patterns: a sequential partner-call staircase, an event-loop–blocking dedupe and a slow third-party API with no timeout. 
 
-The application has no errors. CPU is fine. The database is fast. Nothing is obviously broken — and that is exactly the problem.
-
-Skyward is a deliberately crippled online-travel-agency flight aggregator wired with [Elastic Distribution of OpenTelemetry Node.js (EDOT)](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/node) so you can watch Kibana diagnose three concurrent antipatterns: a sequential partner-call staircase, an event-loop–blocking dedupe, and a slow third-party API with no timeout. The app is completely standard — Express, Postgres, pino — with **zero OTel code**. Instrumentation happens at process startup via `--import`.
-
----
+The app is completely standard Node.js web app using Express, Postgres with **zero OTel code**.
 
 ## Architecture
 
@@ -25,9 +21,12 @@ Skyward is a deliberately crippled online-travel-agency flight aggregator wired 
                               │   (docker)   │
                               └──────────────┘
 
+```
+
+``sh
   node --import @elastic/opentelemetry-node app.js   ← the only change
   config: OTEL_EXPORTER_OTLP_ENDPOINT · OTEL_API_KEY · OTEL_SERVICE_NAME
-```
+``
 
 What Elastic captures automatically, with no code changes:
 - **Traces** — waterfall per request, spans for every HTTP call and SQL query
@@ -35,15 +34,13 @@ What Elastic captures automatically, with no code changes:
 - **Logs** — pino output correlated to traces by `trace_id`
 - **Errors** — stack traces with the exact span that threw
 
----
-
 ## Setup
 
 ### 1. Elastic Serverless project
 
 Create a free trial at [cloud.elastic.co](https://cloud.elastic.co/registration) → **New project → Serverless → Observability**.
 
-Go to **Add data → APM → OpenTelemetry** and copy your endpoint + API key.
+Go to **Add data → OpenTelemetry** and copy your endpoint + API key.
 
 ### 2. Clone and install
 
@@ -57,7 +54,7 @@ cp .env.example .env        # paste your endpoint and API key here
 **Optional:** set `KIBANA_URL` in `.env` to your Kibana deployment URL. This enables the **Open in Kibana ↗** link inside the app's debug drawer.
 
 **Why does `OTEL_SERVICE_NAME` matter?**
-It is the primary key in every Kibana view — service inventory, APM transactions, dependency map, correlated logs. Without a meaningful name all your signals land in one undifferentiated bucket. With `skyward-search` you can open two services side-by-side in the same time window (`skyward-search` and `skyward-search-fixed`) and watch latency drop as you flip each chaos flag.
+It is the primary key in every Kibana view — service inventory, transactions, dependency map, correlated logs. Without a meaningful name all your signals land in one undifferentiated bucket. With `skyward-search` you can open two services side-by-side in the same time window (`skyward-search` and `skyward-search-fixed`) and watch latency drop as you flip each chaos flag.
 
 ### 3. Start Postgres and seed data
 
@@ -80,11 +77,10 @@ npm run start:partners
 npm start
 ```
 
-Open **http://localhost:3000**, search JFK → LHR, and watch the timer. Expect 6–12 seconds with all chaos flags on.
+Open **http://localhost:3000**, search LHR → SFO, and watch the timer. Expect few seconds with all chaos flags on.
 
 After the search completes, a dot appears on the **Debug with Elastic** button in the header. Click it to open the investigation guide alongside a direct link to your Kibana deployment.
 
----
 
 ## The investigation
 
@@ -163,8 +159,6 @@ npm run load
 
 In Kibana's **Observability → Services** both services appear simultaneously. Compare their latency distributions, error rates, and event-loop metrics in the same time window. The difference is stark.
 
----
-
 ## Generate load
 
 ```bash
@@ -173,9 +167,7 @@ npm run load
 
 Runs autocannon with 15 concurrent connections against `/api/search` with randomised origins, destinations, dates, and users for 5 minutes, plus a 1 req/s trickle to `/health`. The health latency in the results tells you exactly how badly the event loop is blocked.
 
----
-
-## npm scripts
+## npm scripts & commands
 
 | Script | What it does |
 |---|---|
@@ -184,6 +176,7 @@ Runs autocannon with 15 concurrent connections against `/api/search` with random
 | `npm start` | Start skyward-search on :3000 with EDOT and all chaos flags on |
 | `npm run start:fast` | Start skyward-search on :3001 with all chaos off (`skyward-search-fixed`) |
 | `npm run load` | Run the autocannon load test against :3000 |
+
 
 ## Chaos flags (`.env`)
 
@@ -198,7 +191,6 @@ Runs autocannon with 15 concurrent connections against `/api/search` with random
 
 Set `KIBANA_URL=https://your-deployment.kb.region.aws.elastic.cloud` to enable the **Open in Kibana ↗** deep-link in the app's debug drawer.
 
----
 
 ## Useful links
 
