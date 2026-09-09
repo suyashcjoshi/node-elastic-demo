@@ -183,4 +183,4 @@ Issues and pull requests are welcome. Please keep the `CHAOS_*` code paths intac
 
 Apache-2.0. See [LICENSE](LICENSE).
 
-Elastic, Elasticsearch and Kibana are trademarks of Elasticsearch B.V. This is a personal demo repository. See [Elastic's brand guidelines](https://brandfolder.com/elastic) before reusing the logo.
+Elastic, Elasticsearch and Kibana are trademarks of Elastic NV.
