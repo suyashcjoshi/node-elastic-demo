@@ -82,14 +82,20 @@ Optional: add these lines to `/etc/hosts` so the Dependencies view shows partner
 ## How it works
 
 ```
-  Browser ──HTTP──▶ skyward-search (Express · pino · pg · EDOT) ──OTLP──▶ Elastic
+  Browser ── HTTP ──▶ skyward-search (Express · pino · PostgreSQL · EDOT) ── OTLP Collector ──▶ Elastic
                         │                  │
                         │ HTTP             │ SQL
                         ▼                  ▼
-          four partner APIs (mock,     Postgres
+          four mock partner APIs (mock,     Postgres
           not instrumented)            search history, fare trends
           :4001 :4002 :4003 :4004
 ```
+
+#### Stack:
+- Node.js 22, Postgres 16, 
+- `@elastic/opentelemetry-node` 1.17,
+- Elastic Cloud Serverless
+
 
 `GET /api/search` reads the user's recent searches and the route's average fare from Postgres, records the search, calls the four partners, merges and de-duplicates the fares, and returns the cheapest 50.
 
@@ -159,35 +165,6 @@ All settings live in `.env`. Copy `.env.example` to start.
 **Other:** `FARES_PER_PARTNER=3000` (lower it for faster local runs), `LOAD_CONNECTIONS=6`, `LOAD_DURATION_SECONDS=300`, `LOAD_URL`.
 
 **Elastic:** `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_SERVICE_NAME`, `ELASTIC_OTEL_NODE_ENABLE_LOG_SENDING=true` (needed for logs to appear in Elastic).
-
-## npm scripts
-
-| Script | What it does |
-|---|---|
-| `npm run seed` | Create tables and seed Postgres |
-| `npm run start:partners` | Start the four mock partner APIs on ports 4001–4004 |
-| `npm run start:plain` | Start the app on :3000 without Elastic |
-| `npm start` | Start the app on :3000 with Elastic (EDOT) |
-| `npm run start:fast` | Start the fixed app on :3001 as `skyward-search-fixed` |
-| `npm run restart:elastic` | Stop the app and start it with Elastic |
-| `npm run load` / `npm run load:fast` | Load test :3000 / :3001 |
-| `npm run status` | Show whether app and partners are running |
-
-## Troubleshooting
-
-| Symptom | Cause | Fix |
-|---|---|---|
-| Service appears as `unknown_service:node` | `OTEL_SERVICE_NAME` not set | Set it in `.env` and restart |
-| Traces appear but no logs | Log sending is off by default | `ELASTIC_OTEL_NODE_ENABLE_LOG_SENDING=true` |
-| Nothing appears in Kibana | Endpoint or API key typo, or app started before `.env` was edited | Check `.env`, run `npm run restart:elastic`, wait a minute |
-| 502 in Codespaces | App is not running | `npm run status`, then `bash .devcontainer/start.sh` |
-| `bad option: --env-file` | Node older than 20.6 | Upgrade Node |
-| `ECONNREFUSED 5432` | Postgres not running | Start the Docker container, then `npm run seed` |
-| Partners show as `localhost:400x` | No hostnames mapped | Optional `/etc/hosts` step above |
-
-## Tested with
-
-Node.js 22, Postgres 16, `@elastic/opentelemetry-node` 1.17, Elastic Cloud Serverless (September 2026).
 
 ## Learn more
 
