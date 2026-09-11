@@ -18,11 +18,11 @@ node --import @elastic/opentelemetry-node src/app.js
 >
 > **Using an AI coding tool?** Point it at [AGENTS.md](AGENTS.md). It has the run, verify and deploy commands and the rule about not "fixing" the intentional slow code.
 
-## What Sam sees — and what Elastic shows
+## Demo App Probelm & Solution with help of Elastic's Observability
 
-| What Sam sees | Root cause | Elastic shows it | Fix |
+| What User sees | Root cause | Elastic shows it | Fix |
 |---|---|---|---|
-| Flights timer climbs past 5 s; results trickle in slowly | `CHAOS_STAIRCASE`: partners called one after another with sequential `await` | Trace waterfall — four HTTP spans in a staircase, each starting after the previous ends | `CHAOS_STAIRCASE=false` → `Promise.allSettled` |
+| Flights timer climbs around 5 seconds; results trickle in slowly | `CHAOS_STAIRCASE`: partners called one after another with sequential `await` | Trace waterfall — four HTTP spans in a staircase, each starting after the previous ends | `CHAOS_STAIRCASE=false` → `Promise.allSettled` |
 | "Customer Care" chat shows typing dots then "Error: unexpected server response." | Missing `await` on `pool.query()` in `/api/chat` → `TypeError: Cannot read properties of undefined` → 500 | Error traces in Elastic with `TypeError` and stack pointing to the missing `await` | Add `await` before `pool.query(...)` |
 | After fixing the chat bug, replies are very slow; browser shows "Still connecting..." | `CHAOS_GAP`: O(n²) nested-loop dedupe blocks the Node.js event loop | `GET /health` takes ~700 ms with zero child spans; `nodejs.eventloop.delay` spikes | `CHAOS_GAP=false` → Map-based O(n) dedupe |
 | Booking fails with an error and a request ID even for real flights | `CHAOS_PARTNER`: no outbound timeout on Penguin Air's `/confirm` call; Penguin takes 4 s + 15% 503 | Dependencies view: Penguin Air red; error traces linked to pino log lines | `CHAOS_PARTNER=false` → `AbortSignal.timeout(1500)`, held-fare fallback |
