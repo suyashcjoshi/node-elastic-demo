@@ -20,8 +20,14 @@ await pool.query(`
     origin      CHAR(3) NOT NULL,
     destination CHAR(3) NOT NULL,
     date        DATE NOT NULL,
+    purpose     TEXT,
     searched_at TIMESTAMPTZ DEFAULT now()
   )
+`);
+
+// Migrate existing tables that predate the purpose column
+await pool.query(`
+  ALTER TABLE search_history ADD COLUMN IF NOT EXISTS purpose TEXT
 `);
 
 await pool.query(`
@@ -35,53 +41,53 @@ await pool.query(`
   )
 `);
 
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS bookings (
+    id          SERIAL PRIMARY KEY,
+    user_id     INT REFERENCES users(id),
+    flight_id   TEXT NOT NULL,
+    airline     TEXT NOT NULL,
+    price_cents INT NOT NULL,
+    partner     TEXT NOT NULL,
+    source      TEXT NOT NULL DEFAULT 'partner',
+    booked_at   TIMESTAMPTZ DEFAULT now()
+  )
+`);
+
 const { rows: existing } = await pool.query('SELECT COUNT(*)::int AS n FROM users');
 if (existing[0].n === 0) {
   await pool.query(`
     INSERT INTO users (name, email) VALUES
-      ('Alice Chen',    'alice@example.com'),
-      ('Bob Martínez',  'bob@example.com'),
-      ('Chloe Dupont',  'chloe@example.com'),
-      ('Dmitri Volkov',  'dmitri@example.com'),
-      ('Eva Müller',    'eva@example.com'),
-      ('Faisal Al-Amin','faisal@example.com'),
-      ('Grace Kim',     'grace@example.com'),
-      ('Hassan Osei',   'hassan@example.com'),
-      ('Isabela Souza', 'isabela@example.com'),
-      ('Jin Park',      'jin@example.com')
+      ('Sam Taylor',     'sam@northwind.example'),
+      ('Jordan Lee',     'jordan@northwind.example'),
+      ('Alex Rivera',    'alex@northwind.example'),
+      ('Morgan Chen',    'morgan@northwind.example'),
+      ('Casey Walsh',    'casey@northwind.example'),
+      ('Drew Patel',     'drew@northwind.example'),
+      ('Robin Osei',     'robin@northwind.example'),
+      ('Quinn Müller',   'quinn@northwind.example'),
+      ('Blake Souza',    'blake@northwind.example'),
+      ('Avery Kim',      'avery@northwind.example')
   `);
   console.log('seeded users');
 }
 
 const { rows: trends } = await pool.query('SELECT COUNT(*)::int AS n FROM fare_trends');
 if (trends[0].n === 0) {
+  // Primary route: LHR→SFO avg ~$720 so "vs route average" reads sensibly.
+  // Secondary routes filled with reasonable baselines.
   const routes = [
-    ['JFK', 'LAX'], ['JFK', 'LHR'], ['JFK', 'CDG'], ['JFK', 'NRT'],
-    ['LAX', 'JFK'], ['LAX', 'LHR'], ['LAX', 'NRT'], ['LAX', 'SYD'],
-    ['ORD', 'LAX'], ['ORD', 'LHR'], ['ORD', 'CDG'], ['ORD', 'ATL'],
-    ['ATL', 'JFK'], ['ATL', 'LAX'], ['ATL', 'LHR'], ['ATL', 'DFW'],
-    ['DFW', 'LAX'], ['DFW', 'LHR'], ['DFW', 'JFK'], ['DFW', 'NRT'],
-    ['SFO', 'JFK'], ['SFO', 'LHR'], ['SFO', 'NRT'], ['SFO', 'SYD'],
-    ['SEA', 'JFK'], ['SEA', 'LHR'], ['SEA', 'NRT'], ['SEA', 'LAX'],
-    ['BOS', 'LAX'], ['BOS', 'LHR'], ['BOS', 'CDG'], ['BOS', 'JFK'],
-    ['MIA', 'JFK'], ['MIA', 'LAX'], ['MIA', 'LHR'], ['MIA', 'CDG'],
-    ['LHR', 'JFK'], ['LHR', 'LAX'], ['LHR', 'NRT'], ['LHR', 'DXB'],
-    ['CDG', 'JFK'], ['CDG', 'LAX'], ['CDG', 'NRT'], ['CDG', 'DXB'],
-    ['AMS', 'JFK'], ['AMS', 'LAX'], ['AMS', 'NRT'], ['AMS', 'DXB'],
+    ['LHR', 'SFO', 72000], ['LHR', 'JFK', 55000], ['LHR', 'LAX', 68000], ['LHR', 'ORD', 52000],
+    ['LHR', 'DFW', 58000], ['LHR', 'BOS', 53000], ['LHR', 'ATL', 56000], ['LHR', 'MIA', 60000],
+    ['SFO', 'LHR', 72000], ['SFO', 'JFK', 28000], ['SFO', 'LAX', 9000],  ['SFO', 'ORD', 25000],
+    ['JFK', 'LHR', 55000], ['JFK', 'SFO', 28000], ['JFK', 'LAX', 26000], ['JFK', 'CDG', 67000],
+    ['CDG', 'JFK', 67000], ['CDG', 'LAX', 78000], ['CDG', 'SFO', 74000], ['CDG', 'LHR', 18000],
+    ['AMS', 'JFK', 58000], ['AMS', 'SFO', 70000], ['AMS', 'LAX', 72000], ['AMS', 'LHR', 16000],
   ];
-  // Rough seasonal base prices in cents
-  const basePrices = {
-    'JFK-LAX': 28000, 'JFK-LHR': 65000, 'JFK-CDG': 67000, 'JFK-NRT': 98000,
-    'LAX-JFK': 28000, 'LAX-LHR': 72000, 'LAX-NRT': 85000, 'LAX-SYD': 120000,
-    'LHR-JFK': 65000, 'LHR-LAX': 72000, 'LHR-NRT': 95000, 'LHR-DXB': 45000,
-    'CDG-JFK': 67000, 'CDG-LAX': 78000, 'CDG-NRT': 98000, 'CDG-DXB': 48000,
-  };
-  const seasonalMult = [1.1, 1.0, 0.9, 0.85, 0.95, 1.2, 1.3, 1.25, 1.1, 0.95, 0.9, 1.2];
+  const seasonalMult = [1.05, 1.00, 0.92, 0.88, 0.95, 1.20, 1.30, 1.25, 1.10, 0.95, 0.90, 1.15];
 
   const values = [];
-  for (const [orig, dest] of routes) {
-    const key = `${orig}-${dest}`;
-    const base = basePrices[key] || 55000;
+  for (const [orig, dest, base] of routes) {
     for (let month = 1; month <= 12; month++) {
       const avg = Math.round(base * seasonalMult[month - 1]);
       values.push(`('${orig}','${dest}',${avg},${month})`);

@@ -3,355 +3,581 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Skyward — Find flights</title>
+  <title>Skyward for Business — Northwind Consulting</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header>
-  <div class="logo">✈ Skyward</div>
-  <button class="debug-btn" id="debug-btn" aria-label="Debug with Elastic">
-    <span class="debug-icon">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-    </span>
+  <div class="header-brand">
+    <div class="logo">✈ Skyward for Business</div>
+    <div class="brand-sub">Northwind Consulting</div>
+  </div>
+  <a class="debug-btn" href="https://github.com/suyashcjoshi/elastic-observability-nodejs-demo#the-three-problems"
+     target="_blank" rel="noopener" aria-label="Debug with Elastic">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
     <span>Debug with Elastic</span>
-    <span class="debug-badge" id="debug-badge" hidden></span>
-  </button>
+  </a>
 </header>
 
-<main>
+<nav class="site-nav">
+  <span class="nav-item nav-active">Flights</span>
+  <span class="nav-item nav-inactive">Hotels</span>
+  <span class="nav-item nav-inactive">Cars</span>
+</nav>
 
-  <!-- Search form -->
-  <div class="search-card">
-    <form id="search-form" autocomplete="off">
-      <div class="field">
-        <label for="origin">From</label>
-        <input id="origin" type="text" placeholder="JFK" maxlength="3" value="JFK" required>
-      </div>
-      <div class="field">
-        <label for="destination">To</label>
-        <input id="destination" type="text" placeholder="LHR" maxlength="3" value="LHR" required>
-      </div>
-      <div class="field">
-        <label for="date">Date</label>
-        <input id="date" type="date" required>
-      </div>
-      <div class="btn-wrap">
-        <label style="visibility:hidden;font-size:.7rem">&nbsp;</label>
-        <button type="submit" id="search-btn">Search flights</button>
-      </div>
-    </form>
+<div class="destination-banner">
+  <div class="banner-content">
+    <div class="banner-route">London → San Francisco</div>
+    <div class="banner-sub">LHR · Heathrow &nbsp;→&nbsp; SFO · San Francisco Intl</div>
   </div>
+</div>
 
-  <!-- Loading state -->
-  <div id="loading-section" hidden>
-    <div class="loading-wrap">
-      <div class="spinner-ring"></div>
-      <div class="loading-text">
-        <div class="loading-label" id="loading-route">Searching flights…</div>
-        <div class="loading-sub">Querying SkyJet, AeroLuz, Nimbus, Zephyr</div>
-      </div>
-      <div class="timer-display">
-        <div class="timer" id="timer">0:00.0</div>
-        <div class="timer-unit">elapsed</div>
-      </div>
-    </div>
-  </div>
+<div class="page-layout">
 
-  <!-- Results -->
-  <div id="results-section" hidden>
-    <div class="status-bar" id="status-bar"></div>
-    <div class="flights" id="flights-list"></div>
-  </div>
+  <!-- ── Main column ─────────────────────────────────────────── -->
+  <div class="main-col">
 
-  <!-- Error -->
-  <div id="error-section" hidden>
-    <div class="error-card">
-      <h2>Search failed</h2>
-      <p id="error-msg">We couldn't complete your search. Please try again.</p>
-    </div>
-  </div>
-
-</main>
-
-<!-- Elastic debug drawer -->
-<div class="drawer-overlay" id="drawer-overlay"></div>
-<aside class="drawer" id="drawer" aria-label="Elastic Observability">
-  <div class="drawer-header">
-    <div class="drawer-title">
-      <svg class="elastic-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14 14-6.268 14-14S23.732 2 16 2z" fill="#00BFB3" opacity=".15"/>
-        <path d="M20.5 10.5H13a2.5 2.5 0 000 5h6a2.5 2.5 0 010 5h-8" stroke="#00BFB3" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      Elastic Observability
-    </div>
-    <div class="drawer-actions">
-      <a class="kibana-link" id="kibana-link" href="#" target="_blank" rel="noopener" hidden>
-        Open in Kibana ↗
-      </a>
-      <button class="drawer-close" id="drawer-close" aria-label="Close">✕</button>
-    </div>
-  </div>
-
-  <div class="drawer-body">
-    <div class="drawer-intro">
-      All of these insights were captured <strong>automatically</strong> — no instrumentation code added to the app.
-      Run a search, then follow the steps below in Kibana to watch the traces arrive in real time.
+    <div class="search-card">
+      <div class="policy-hint">Economy · In-policy fares under $1,200</div>
+      <form id="search-form" autocomplete="off">
+        <div class="field">
+          <label for="origin">From</label>
+          <input id="origin" type="text" placeholder="LHR" maxlength="3" value="LHR" required>
+        </div>
+        <div class="field">
+          <label for="destination">To</label>
+          <input id="destination" type="text" placeholder="SFO" maxlength="3" value="SFO" required>
+        </div>
+        <div class="field">
+          <label for="date">Date</label>
+          <input id="date" type="date" required>
+        </div>
+        <div class="field">
+          <label for="purpose">Trip purpose</label>
+          <select id="purpose">
+            <option value="client_meeting" selected>Client meeting</option>
+            <option value="conference">Conference</option>
+            <option value="internal">Internal</option>
+          </select>
+        </div>
+        <div class="btn-wrap">
+          <label style="visibility:hidden;font-size:.7rem">&nbsp;</label>
+          <button type="submit" id="search-btn">Search flights</button>
+        </div>
+      </form>
     </div>
 
-    <div class="guide-steps">
-
-      <div class="guide-step">
-        <div class="step-num">1</div>
-        <div class="step-body">
-          <div class="step-title">Open the trace waterfall</div>
-          <div class="step-nav">
-            Observability → Services → <code>skyward-search</code> → Transactions →
-            click <code>GET /api/search</code> → open the slowest sample trace.
-            <br>Look at the waterfall: four partner HTTP spans are lined up as a staircase — each waits for the previous to finish.
-          </div>
-          <span class="step-reveal r1">Reveal 1 · flip CHAOS_STAIRCASE=false</span>
+    <!-- Loading -->
+    <div id="loading-section" hidden>
+      <div class="loading-wrap">
+        <div class="spinner-ring"></div>
+        <div class="loading-text">
+          <div class="loading-label" id="loading-route">Searching flights…</div>
+          <div class="loading-sub">Querying PuffinAir, GooseJet, Pelican Air, Penguin Air</div>
+        </div>
+        <div class="timer-display">
+          <div class="timer" id="timer">0:00.0</div>
+          <div class="timer-unit">elapsed</div>
         </div>
       </div>
+    </div>
 
-      <div class="guide-step">
-        <div class="step-num">2</div>
-        <div class="step-body">
-          <div class="step-title">Check event-loop delay + /health latency</div>
-          <div class="step-nav">
-            Observability → Services → <code>skyward-search</code> → <code>Metrics</code> tab.
-            Find <code>nodejs.eventloop.delay.p99</code> — spikes of 700 ms+ appear on every search.
-            <br>Then Observability → <strong>Logs Explorer</strong>, filter <code>url.path: /health</code> — even the health
-            endpoint shows the same delay. A blocked event loop hurts <em>all</em> requests.
-          </div>
-          <span class="step-reveal r2">Reveal 2 · flip CHAOS_GAP=false</span>
+    <!-- Results -->
+    <div id="results-section" hidden>
+      <div class="results-header">
+        <div class="status-bar" id="status-bar"></div>
+        <div class="sort-control">
+          <span class="sort-label">Sort:</span>
+          <button class="sort-btn active" data-sort="fastest">Fastest</button>
+          <button class="sort-btn" data-sort="cheapest">Cheapest</button>
+          <button class="sort-btn" data-sort="best">Best</button>
         </div>
       </div>
+      <div class="flights" id="flights-list"></div>
+    </div>
 
-      <div class="guide-step">
-        <div class="step-num">3</div>
-        <div class="step-body">
-          <div class="step-title">Find the zombie partner in Service Map</div>
-          <div class="step-nav">
-            Observability → <strong>Service Map</strong> — <code>localhost:4004</code> (Zephyr) will be
-            visibly hotter than the other three partners (higher error rate, extreme p99).
-            <br>Click it → open an error trace → switch to the <code>Logs</code> tab inside → see
-            <code>partners_responded: 3</code> in the correlated pino log line.
-          </div>
-          <span class="step-reveal r3">Reveal 3 · flip CHAOS_PARTNER=false</span>
+    <!-- Error -->
+    <div id="error-section" hidden>
+      <div class="error-card">
+        <h2>Search failed</h2>
+        <p id="error-msg">We couldn't complete your search. Please try again.</p>
+      </div>
+    </div>
+
+  </div><!-- /.main-col -->
+
+  <!-- ── Sidebar ──────────────────────────────────────────────── -->
+  <aside class="sidebar-col">
+    <div class="sidebar-card" id="insights-card">
+      <div class="sidebar-card-header">
+        <span class="sidebar-card-title">Route insights</span>
+        <span class="insights-meta">
+          <span class="insights-route-label" id="insights-route">LHR → SFO</span>
+          <span class="insights-ms" id="insights-ms">—</span>
+        </span>
+      </div>
+      <div class="insights-loading" id="insights-loading">
+        <div class="mini-spinner"></div><span>Loading…</span>
+      </div>
+      <div id="insights-content" hidden>
+        <div class="insights-row">
+          <span class="insights-label">Avg price this month</span>
+          <span class="insights-val" id="insights-price">—</span>
+        </div>
+        <div class="insights-row">
+          <span class="insights-label">vs last month</span>
+          <span class="insights-val" id="insights-trend">—</span>
+        </div>
+        <div class="insights-row" id="insights-low-row" hidden>
+          <span class="insights-label">Lowest today</span>
+          <span class="insights-val" id="insights-low">—</span>
+        </div>
+        <div id="insights-history"></div>
+      </div>
+      <div class="insights-err" id="insights-error" hidden>Could not load insights</div>
+    </div>
+  </aside>
+
+</div><!-- /.page-layout -->
+
+<!-- ── Book modal ──────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-overlay" hidden>
+  <div class="modal" id="book-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Confirm booking</span>
+      <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Step 1: confirm -->
+      <div id="modal-price-check">
+        <div class="modal-flight-info" id="modal-flight-info"></div>
+        <button class="modal-confirm-btn" id="modal-confirm-btn">Confirm booking</button>
+      </div>
+      <!-- Step 2: processing -->
+      <div id="modal-processing" hidden>
+        <div class="modal-checking">
+          <div class="mini-spinner"></div>
+          <span>Contacting airline…</span>
         </div>
       </div>
-
-      <div class="guide-step">
-        <div class="step-num">4</div>
-        <div class="step-body">
-          <div class="step-title">Side-by-side comparison</div>
-          <div class="step-nav">
-            Run <code>npm run start:fast</code> in a new terminal (port 3001, all chaos off,
-            service name <code>skyward-search-fixed</code>).
-            Both services appear in the APM service inventory simultaneously — compare latency
-            distributions and event-loop metrics in the same time window.
-          </div>
-          <span class="step-reveal log">Bonus · search http://localhost:3001 for the fixed experience</span>
-        </div>
+      <!-- Step 3: failure -->
+      <div id="modal-failure" hidden>
+        <div class="modal-failure-msg" id="modal-failure-msg">Please contact customer care to book this flight as it is not available anymore.</div>
+        <div class="modal-failure-id" id="modal-failure-id"></div>
       </div>
-
     </div>
   </div>
-</aside>
+</div>
+
+<!-- ── Chat widget ──────────────────────────────────────────────────────────── -->
+<div class="chat-widget-wrap">
+  <div class="chat-label">Customer Care</div>
+  <button class="chat-bubble" id="chat-bubble" aria-label="Northwind Travel Desk" aria-expanded="false">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  </button>
+</div>
+<div class="chat-panel" id="chat-panel" hidden>
+  <div class="chat-panel-header">
+    <span class="chat-panel-title">Northwind Travel Desk</span>
+    <button class="chat-close-btn" id="chat-close" aria-label="Close">✕</button>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg bot">How can I help?</div>
+  </div>
+  <div class="chat-quick-replies" id="quick-replies">
+    <button class="quick-reply" data-msg="Help">Help</button>
+    <button class="quick-reply" data-msg="Travel policy">Policy</button>
+    <button class="quick-reply" data-msg="Change my booking">Change booking</button>
+    <button class="quick-reply" data-msg="Cancel my flight">Cancel flight</button>
+  </div>
+  <form class="chat-form" id="chat-form" autocomplete="off">
+    <input class="chat-input" id="chat-input" type="text" placeholder="Type a message…" maxlength="200">
+    <button class="chat-send-btn" type="submit" aria-label="Send">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </form>
+</div>
 
 <script>
 (function () {
-  // Default date = 1 week out
-  const d = new Date();
-  d.setDate(d.getDate() + 7);
-  document.getElementById('date').value = d.toISOString().slice(0, 10);
-
-  // Fetch Kibana URL from server config
-  fetch('/api/config').then(r => r.json()).then(cfg => {
-    if (cfg.kibanaUrl) {
-      const link = document.getElementById('kibana-link');
-      link.href = cfg.kibanaUrl;
-      link.hidden = false;
-    }
-  }).catch(() => {});
-
-  // Drawer
-  const debugBtn = document.getElementById('debug-btn');
-  const debugBadge = document.getElementById('debug-badge');
-  const drawer = document.getElementById('drawer');
-  const overlay = document.getElementById('drawer-overlay');
-  const closeBtn = document.getElementById('drawer-close');
-
-  function openDrawer() {
-    drawer.classList.add('open');
-    overlay.classList.add('open');
-    debugBadge.hidden = true;
+  // ── Utilities ───────────────────────────────────────────────────────────────
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
-  function closeDrawer() {
-    drawer.classList.remove('open');
-    overlay.classList.remove('open');
+  function fmtPrice(c) {
+    return '$' + (c / 100).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
-
-  debugBtn.addEventListener('click', openDrawer);
-  closeBtn.addEventListener('click', closeDrawer);
-  overlay.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
-
-  const form    = document.getElementById('search-form');
-  const btn     = document.getElementById('search-btn');
-  const timerEl = document.getElementById('timer');
-
-  let timerInterval = null;
-
+  function fmtDur(m) {
+    return `${Math.floor(m/60)}h ${m % 60}m`;
+  }
   function fmtTimer(ms) {
-    const tenths  = Math.floor(ms / 100) % 10;
-    const secs    = Math.floor(ms / 1000);
+    const tenths = Math.floor(ms / 100) % 10;
+    const secs   = Math.floor(ms / 1000);
     return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}.${tenths}`;
   }
 
-  function startTimer() {
+  // ── State ───────────────────────────────────────────────────────────────────
+  const userId = Math.ceil(Math.random() * 10);
+  let searchResults = [];
+  let currentSort = 'fastest';
+  let currentFlight = null;
+
+
+  // ── Default date = tomorrow ─────────────────────────────────────────────────
+  (function setDefaultDate() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    document.getElementById('date').value = d.toISOString().slice(0, 10);
+  })();
+
+  // ── Search timer ────────────────────────────────────────────────────────────
+  const timerEl = document.getElementById('timer');
+  let timerInterval = null;
+
+  function startTimer(el, intervalRef) {
     const t0 = Date.now();
-    timerEl.textContent = '0:00.0';
-    timerInterval = setInterval(() => { timerEl.textContent = fmtTimer(Date.now() - t0); }, 100);
+    el.textContent = '0:00.0';
+    return setInterval(() => { el.textContent = fmtTimer(Date.now() - t0); }, 100);
   }
 
-  function stopTimer() { clearInterval(timerInterval); timerInterval = null; }
-
+  // ── Section visibility ──────────────────────────────────────────────────────
   function show(id) {
     ['loading-section', 'results-section', 'error-section']
       .forEach(s => { document.getElementById(s).hidden = s !== id; });
   }
 
-  function esc(s) {
-    return String(s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  // ── Sort buttons ────────────────────────────────────────────────────────────
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSort = btn.dataset.sort;
+      document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b === btn));
+      renderFlights(sortedResults());
+    });
+  });
 
-  function fmtPrice(c) {
-    return '$' + (c / 100).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
-
-  function fmtDur(m) {
-    return m >= 60 ? `${Math.floor(m/60)}h ${m%60}m` : `${m}m`;
-  }
-
-  const COLORS = { M:'al-M', S:'al-S', A:'al-A', N:'al-N', Z:'al-Z' };
-  function logoClass(code) { return COLORS[code[0]] || 'al-X'; }
-
-  function initials(name) {
-    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-  }
-
-  function renderResults(data, origin, dest) {
-    const bar = document.getElementById('status-bar');
-    bar.innerHTML = '';
-
-    const addPill = (cls, text) => {
-      const p = document.createElement('span');
-      p.className = `pill ${cls}`;
-      p.textContent = text;
-      bar.appendChild(p);
+  function sortedResults() {
+    const fns = {
+      fastest:  (a, b) => a.durationMins - b.durationMins || a.priceCents - b.priceCents,
+      cheapest: (a, b) => a.priceCents - b.priceCents,
+      best:     (a, b) => (a.priceCents * a.durationMins) - (b.priceCents * b.durationMins),
     };
+    return [...searchResults].sort(fns[currentSort] || fns.fastest);
+  }
 
-    addPill('partners', `${data.partners_responded} / ${data.partners_total} partners responded`);
-    addPill('time', `${(data.elapsed_ms / 1000).toFixed(2)}s`);
-
-    if (data.trend_avg_cents && data.flights.length) {
-      const best = data.flights[0].priceCents;
-      const pct  = Math.round(Math.abs(best - data.trend_avg_cents) / data.trend_avg_cents * 100);
-      const dir  = best < data.trend_avg_cents ? 'below' : 'above';
-      addPill(`trend-${dir}`, `${pct}% ${dir} route avg (${fmtPrice(data.trend_avg_cents)})`);
-    }
-
+  // ── Render flights ──────────────────────────────────────────────────────────
+  function renderFlights(flights) {
     const list = document.getElementById('flights-list');
     list.innerHTML = '';
-
-    if (!data.flights.length) {
-      list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem 0">No flights found for this route.</p>';
+    if (!flights.length) {
+      list.innerHTML = '<p class="no-results">No flights found for this route.</p>';
       return;
     }
-
-    for (const f of data.flights) {
+    for (const f of flights) {
       const card = document.createElement('article');
       card.className = 'flight-card';
+      const stopsLabel = f.stops === 0 ? 'Direct' : `1 stop${f.via ? ' via ' + f.via : ''}`;
+      const policyBadge = f.in_policy
+        ? '<span class="badge badge-policy">In policy</span>'
+        : '<span class="badge badge-approval">Needs approval</span>';
       card.innerHTML = `
-        <div class="airline-col">
-          <div class="airline-logo ${logoClass(f.flightNumber)}">${initials(f.airline)}</div>
-          <div class="airline-name">${esc(f.airline)}</div>
-          <div class="flight-num">${esc(f.flightNumber)}</div>
+        <div class="fc-airline">
+          <div class="fc-logo al-${esc(f.code)}">${esc(f.code)}</div>
+          <div class="fc-name">${esc(f.airline)}</div>
+          <div class="fc-num">${esc(f.flightNumber)}</div>
         </div>
-        <div class="route-col">
-          <div class="time-block">
-            <div class="time">${esc(f.departure)}</div>
-            <div class="iata">${esc(f.origin)}</div>
-          </div>
+        <div class="fc-route">
+          <div class="time-block"><div class="time">${esc(f.depart)}</div><div class="iata">LHR</div></div>
           <div class="route-mid">
             <div class="route-line"><div class="route-dot"></div></div>
             <div class="dur-label">${fmtDur(f.durationMins)}</div>
+            <div class="stops-label">${esc(stopsLabel)}</div>
           </div>
-          <div class="time-block">
-            <div class="time">${esc(f.arrival)}</div>
-            <div class="iata">${esc(f.destination)}</div>
-          </div>
+          <div class="time-block"><div class="time">${esc(f.arrive)}</div><div class="iata">SFO</div></div>
         </div>
-        <div class="price-col">
-          <div class="price">${fmtPrice(f.priceCents)}</div>
-          <div class="price-sub">per person</div>
+        <div class="fc-right">
+          <div class="fc-price">${fmtPrice(f.priceCents)}</div>
+          <div class="fc-price-sub">per person</div>
+          ${policyBadge}
+          <button class="book-btn" data-id="${esc(f.id)}">Book</button>
         </div>`;
       list.appendChild(card);
     }
+
+    list.querySelectorAll('.book-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const flight = searchResults.find(f => f.id === btn.dataset.id);
+        if (flight) openBookModal(flight);
+      });
+    });
   }
+
+  // ── Search form ─────────────────────────────────────────────────────────────
+  const form = document.getElementById('search-form');
+  const searchBtn = document.getElementById('search-btn');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const origin = document.getElementById('origin').value.trim().toUpperCase();
     const dest   = document.getElementById('destination').value.trim().toUpperCase();
     const date   = document.getElementById('date').value;
-    const userId = Math.ceil(Math.random() * 10);
+    const purpose = document.getElementById('purpose').value;
 
-    btn.disabled = true;
-    btn.textContent = 'Searching…';
+    searchBtn.disabled = true;
+    searchBtn.textContent = 'Searching…';
     document.getElementById('loading-route').textContent = `${origin} → ${dest} · ${date}`;
     show('loading-section');
-    startTimer();
+    clearInterval(timerInterval);
+    timerInterval = startTimer(timerEl, timerInterval);
 
     try {
       const res = await fetch(
-        `/api/search?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&date=${encodeURIComponent(date)}&user=${userId}`
+        `/api/search?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}` +
+        `&date=${encodeURIComponent(date)}&user=${userId}&purpose=${encodeURIComponent(purpose)}&sort=${currentSort}`
       );
-      stopTimer();
+      clearInterval(timerInterval);
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         show('error-section');
         document.getElementById('error-msg').textContent =
           body.error || `HTTP ${res.status} — please try again.`;
-        // pulse the debug button on error too — something to investigate
-        debugBadge.hidden = false;
-        debugBtn.classList.add('pulse');
         return;
       }
 
       const data = await res.json();
-      show('results-section');
-      renderResults(data, origin, dest);
+      searchResults = data.flights || [];
 
-      // Signal that traces were captured — pulse the debug button
-      debugBadge.hidden = false;
-      debugBtn.classList.add('pulse');
+      const bar = document.getElementById('status-bar');
+      bar.innerHTML = '';
+      const addPill = (cls, text) => {
+        const p = document.createElement('span');
+        p.className = `pill ${cls}`;
+        p.textContent = text;
+        bar.appendChild(p);
+      };
+      addPill('partners', `${data.partners_responded}/${data.partners_total} partners`);
+      addPill('time', `${(data.elapsed_ms / 1000).toFixed(2)}s`);
+      if (data.trend_avg_cents && searchResults.length) {
+        const best = searchResults[0].priceCents;
+        const pct  = Math.round(Math.abs(best - data.trend_avg_cents) / data.trend_avg_cents * 100);
+        const dir  = best < data.trend_avg_cents ? 'below' : 'above';
+        addPill(`trend-${dir}`, `${pct}% ${dir} route avg`);
+      }
+
+      show('results-section');
+      renderFlights(sortedResults());
     } catch {
-      stopTimer();
+      clearInterval(timerInterval);
       show('error-section');
-      document.getElementById('error-msg').textContent =
-        'Network error — check your connection and try again.';
+      document.getElementById('error-msg').textContent = 'Network error — check your connection.';
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Search flights';
+      searchBtn.disabled = false;
+      searchBtn.textContent = 'Search flights';
     }
   });
+
+  // ── Book modal ──────────────────────────────────────────────────────────────
+  const overlay    = document.getElementById('modal-overlay');
+  const modalClose = document.getElementById('modal-close');
+
+  function openBookModal(flight) {
+    currentFlight = flight;
+
+    document.getElementById('modal-title').textContent = 'Confirm booking';
+    document.getElementById('modal-flight-info').innerHTML =
+      `<strong>${esc(flight.flightNumber)}</strong> &nbsp;${esc(flight.depart)} → ${esc(flight.arrive)} &nbsp;` +
+      `${fmtDur(flight.durationMins)} &nbsp;${esc(flight.airline)}` +
+      `<br><span style="font-size:.82rem;color:var(--muted)">Price: ${fmtPrice(flight.priceCents)} per person</span>`;
+
+    document.getElementById('modal-price-check').hidden  = false;
+    document.getElementById('modal-processing').hidden   = true;
+    document.getElementById('modal-failure').hidden      = true;
+    overlay.hidden = false;
+  }
+
+  function closeModal() {
+    overlay.hidden = true;
+    currentFlight = null;
+  }
+
+  modalClose.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  document.getElementById('modal-confirm-btn').addEventListener('click', async () => {
+    if (!currentFlight) return;
+    document.getElementById('modal-price-check').hidden  = true;
+    document.getElementById('modal-processing').hidden   = false;
+
+    try {
+      const res = await fetch('/api/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flight_id: currentFlight.id, user: userId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      document.getElementById('modal-processing').hidden = true;
+      document.getElementById('modal-failure').hidden    = false;
+      document.getElementById('modal-failure-msg').textContent =
+        body.message || 'Please contact customer care to book this flight as it is not available anymore.';
+      document.getElementById('modal-failure-id').textContent =
+        body.request_id ? `Request ID: ${body.request_id}` : '';
+    } catch {
+      document.getElementById('modal-processing').hidden = true;
+      document.getElementById('modal-failure').hidden    = false;
+      document.getElementById('modal-failure-msg').textContent =
+        'Please contact customer care to book this flight as it is not available anymore.';
+      document.getElementById('modal-failure-id').textContent = '';
+    }
+  });
+
+  // ── Insights sidebar ────────────────────────────────────────────────────────
+  let insightsMsInterval = null;
+
+  function fetchInsights() {
+    const origin = document.getElementById('origin').value.trim().toUpperCase() || 'LHR';
+    const dest   = document.getElementById('destination').value.trim().toUpperCase() || 'SFO';
+    document.getElementById('insights-route').textContent = `${origin} → ${dest}`;
+
+    const msEl      = document.getElementById('insights-ms');
+    const loadingEl = document.getElementById('insights-loading');
+    const contentEl = document.getElementById('insights-content');
+    const errorEl   = document.getElementById('insights-error');
+
+    loadingEl.hidden = false; contentEl.hidden = true; errorEl.hidden = true;
+    const t0 = Date.now();
+    clearInterval(insightsMsInterval);
+    insightsMsInterval = setInterval(() => { msEl.textContent = `${Date.now() - t0}ms`; }, 50);
+
+    fetch(`/api/insights?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&user=${userId}`)
+      .then(r => r.json())
+      .then(data => {
+        clearInterval(insightsMsInterval);
+        msEl.textContent = `${Date.now() - t0}ms`;
+
+        document.getElementById('insights-price').textContent =
+          data.avg_price_cents ? fmtPrice(data.avg_price_cents) : '—';
+
+        const trendEl = document.getElementById('insights-trend');
+        if (data.pct_change !== null && data.pct_change !== undefined) {
+          const dir = data.pct_change > 0 ? '▲' : '▼';
+          const cls = data.pct_change > 0 ? 'trend-up' : 'trend-dn';
+          trendEl.innerHTML = `<span class="${cls}">${dir}${Math.abs(data.pct_change)}%</span>`;
+        } else {
+          trendEl.textContent = '—';
+        }
+
+        const lowRow = document.getElementById('insights-low-row');
+        if (data.lowest_price_today) {
+          document.getElementById('insights-low').textContent = fmtPrice(data.lowest_price_today);
+          lowRow.hidden = false;
+        } else {
+          lowRow.hidden = true;
+        }
+
+        const histEl = document.getElementById('insights-history');
+        if (data.recent_searches && data.recent_searches.length) {
+          histEl.innerHTML = `<div class="insights-hist-label">Your recent searches</div>` +
+            data.recent_searches.map(s =>
+              `<div class="insights-hist-item">${esc(s.origin)} → ${esc(s.destination)} · ${esc(s.date)}` +
+              (s.purpose ? ` <span class="hist-purpose">${esc(s.purpose.replace('_', ' '))}</span>` : '') +
+              `</div>`
+            ).join('');
+        } else {
+          histEl.innerHTML = '';
+        }
+
+        loadingEl.hidden = true; contentEl.hidden = false; errorEl.hidden = true;
+      })
+      .catch(() => {
+        clearInterval(insightsMsInterval);
+        msEl.textContent = `${Date.now() - t0}ms`;
+        loadingEl.hidden = true; contentEl.hidden = true; errorEl.hidden = false;
+      });
+  }
+
+  fetchInsights();
+  setInterval(fetchInsights, 5000);
+
+  // ── Chat ────────────────────────────────────────────────────────────────────
+  const chatBubble  = document.getElementById('chat-bubble');
+  const chatPanel   = document.getElementById('chat-panel');
+  const chatCloseBtn = document.getElementById('chat-close');
+  const chatMsgs    = document.getElementById('chat-messages');
+  const quickReplies = document.getElementById('quick-replies');
+  const chatForm    = document.getElementById('chat-form');
+  const chatInput   = document.getElementById('chat-input');
+
+  function openChat()  { chatPanel.hidden = false; chatBubble.setAttribute('aria-expanded','true'); chatInput.focus(); }
+  function closeChat() { chatPanel.hidden = true;  chatBubble.setAttribute('aria-expanded','false'); }
+  chatBubble.addEventListener('click', openChat);
+  chatCloseBtn.addEventListener('click', closeChat);
+
+  document.querySelectorAll('.quick-reply').forEach(btn => {
+    btn.addEventListener('click', () => sendChat(btn.dataset.msg));
+  });
+
+  chatForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const msg = chatInput.value.trim();
+    if (!msg) return;
+    chatInput.value = '';
+    sendChat(msg);
+  });
+
+  function addChatMsg(text, role, cls = '') {
+    const el = document.createElement('div');
+    el.className = `chat-msg ${role}${cls ? ' ' + cls : ''}`;
+    if (typeof text === 'string') el.textContent = text;
+    else el.innerHTML = text;
+    chatMsgs.appendChild(el);
+    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+    return el;
+  }
+
+  async function sendChat(message) {
+    quickReplies.hidden = true;
+    addChatMsg(message, 'user');
+
+    const typingEl = document.createElement('div');
+    typingEl.className = 'chat-msg bot typing-indicator';
+    typingEl.appendChild(document.createElement('span'));
+    typingEl.appendChild(document.createElement('span'));
+    typingEl.appendChild(document.createElement('span'));
+    chatMsgs.appendChild(typingEl);
+    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+
+    try {
+      // Run the fetch and a 2-second minimum-display timer in parallel.
+      // Error message never flashes in immediately - dots have time to feel real.
+      const [res] = await Promise.all([
+        fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, user: userId }),
+        }),
+        new Promise(r => setTimeout(r, 2000)),
+      ]);
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body.reply) {
+        typingEl.remove();
+        addChatMsg(body.reply, 'bot');
+      } else {
+        // Dots stay. Log a traceable reference; dev can match rid in Elastic.
+        console.error('[chat:ERR_' + res.status + '] handler threw - rid=' + (body.request_id || 'n/a'), body);
+        addChatMsg('Error: unexpected server response.', 'bot', 'error');
+      }
+    } catch (err) {
+      console.error('[chat:ERR_NETWORK] fetch failed', err.message);
+      addChatMsg('Could not reach Travel Desk - check your connection.', 'bot', 'error');
+    }
+  }
+
 }());
 </script>
 </body>
